@@ -55,6 +55,42 @@ function Clear-TestName{
     $global:TestName = $null
 }
 
+function Get-RequiredVersionToLoad {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)][string]$Name,
+        [Parameter()][string]$Version
+    )
+    
+    # 1. No Version
+    # 2. Partial Version. Two numbers
+    # 3. Full Version . 3 or 4 numbers
+
+    $modulelist = Get-Module -Name $Name -ListAvailable
+
+    # module not found - return null
+    if($null -eq $modulelist){return $null}
+
+    # No version - returnfirst
+    if([string]::IsNullOrWhiteSpace($Version)){
+        return $modulelist[0]
+    }
+
+    # Asking for a particular version
+    $vv = New-Object -TypeName Version -ArgumentList $Version
+
+    # Found the particular version
+    $available = $modulelist | Where-Object {$_.Version -eq $vv}
+    if($available){
+        return $available
+    }
+
+    # Find compatible version
+    $available = $modulelist | Where-Object {$_.Version.CompareTo($vv) -eq 1}
+
+    return $available[0]
+}
+
 function Import-RequiredModule{
     [CmdletBinding()]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Scope='Function')]
@@ -90,13 +126,14 @@ function Import-RequiredModule{
             $semVer = $V[0]
             $AllowPrerelease = ($AllowPrerelease -or ($null -ne $V[1]))
         }
-
-        $module = Import-Module $ModuleName -PassThru -ErrorAction SilentlyContinue -RequiredVersion:$semVer
-
+        $module = Get-RequiredVersionToLoad -Name $ModuleName -Version $ModuleVersion
+        
         if ($null -eq $module) {
             "Installing module Name[{0}] Version[{1}] AllowPrerelease[{2}]" -f $ModuleName, $ModuleVersion, $AllowPrerelease | Write-Host -ForegroundColor DarkGray
             $installed = Install-Module -Name $ModuleName -Force -AllowPrerelease:$AllowPrerelease -passThru -RequiredVersion:$ModuleVersion
             $module = Import-Module -Name $installed.Name -RequiredVersion ($installed.Version.Split('-')[0]) -Force -PassThru
+        } else {
+            $module = Import-Module -Name $module.Name -RequiredVersion $module.Version -PassThru -ErrorAction SilentlyContinue 
         }
 
         "Imported module Name[{0}] Version[{1}] PreRelease[{2}]" -f $module.Name, $module.Version, $module.privatedata.psdata.prerelease | Write-Host -ForegroundColor DarkGray
