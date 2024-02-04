@@ -19,13 +19,13 @@ function RepoHelperTest_GetRepoAccessAll_SUCCESS{
 
 function RepoHelperTest_GetRepoAccess_Success{
 
-    $owner = 'solidifycustomers' ; $repo = 'bit21' ; $user = 'raulgeu'
+    $owner = 'solidifycustomers' ; $repo = 'bit21' ; $user = 'raulgeukk'
 
     # $GetAccessSuccess = $PSScriptRoot | Join-Path -ChildPath 'testData' -AdditionalChildPath 'getAccessSuccess.json'
     # Set-InvokeCommandMock -Alias 'gh api repos/solidifycustomers/bit21/collaborators/raulgeu/permission' -Command "Get-Content -Path $(($GetAccessSuccess | Get-Item).FullName)"
 
     $GetAccessAllSuccess = $PSScriptRoot | Join-Path -ChildPath 'testData' -AdditionalChildPath 'getAccessAllSuccess.json'
-    Set-InvokeCommandMock -Alias 'gh api repos/solidifycustomers/bit21/collaborators --paginate' -Command "Get-Content -Path $(($GetAccessAllSuccess | Get-Item).FullName)"
+    Set-InvokeCommandMock -Alias "gh api repos/$owner/$repo/collaborators --paginate" -Command "Get-Content -Path $(($GetAccessAllSuccess | Get-Item).FullName)"
 
     $result = Get-RepoAccess -Owner $owner -Repo $repo
 
